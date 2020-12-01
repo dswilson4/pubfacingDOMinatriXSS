@@ -22,7 +22,7 @@
             
             if (found) {
                 // Directly read in DOMinatriXSStatic or control script content
-                var lines = System.IO.File.ReadAllLines("E:\\dev\\DOMinatriXSS\\dominatrixssStatic.js");
+                var lines = System.IO.File.ReadAllLines("dominatrixssStatic.js");
                 var str = String.Join("\n", lines);
                 
                 oSession.oResponse.headers.Add("ChangeHeader", "Caught and modified");

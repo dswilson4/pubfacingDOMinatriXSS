@@ -80,16 +80,14 @@ function afterDOMloaded() {
 
       // Second action...assigning nonce
       meta.setAttribute("http-equiv", "Content-Security-Policy");
-      // meta.setAttribute("content", "script-src " + "'nonce-" + array[0].toString() + "'");
 
-      // We ABSOLUTELY MUST disable unsafe-eval at this point... only was necessary for the use
-      // of new Function(...) for the conversion of inline event handlers (inlineString) to external event handlers...
       meta.setAttribute("content", "script-src 'self' 'unsafe-inline' " + "'nonce-" + array[0].toString() + "' " + "*")
 
 }
 
-if (document.readyState === 'loading') {  // Loading hasn't finished yet
-document.addEventListener('DOMContentLoaded', afterDOMloaded);
-} else {  // `DOMContentLoaded` has already fired
-afterDOMloaded();
-}
+window.addEventListener('DOMContentLoaded', (event) => {
+      const domContentLoadedPoint = performance.now();
+      let timeToDomContentLoaded = domContentLoadedPoint - toDomContentLoaded;
+      console.log("Time to DOMContentLoaded: " + timeToDomContentLoaded + ": " + window.location + ": " + "test");
+      afterDOMloaded();
+});

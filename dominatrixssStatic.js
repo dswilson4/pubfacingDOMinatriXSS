@@ -104,8 +104,6 @@ function afterDOMloaded() {
       // Second action...assigning nonce
       meta.setAttribute("http-equiv", "Content-Security-Policy");
 
-      // We ABSOLUTELY MUST disable unsafe-eval at this point... only was necessary for the use
-      // of new Function(...) for the conversion of inline event handlers (inlineString) to external event handlers...
       meta.setAttribute("content", "script-src 'self' 'unsafe-inline' " + "'nonce-" + array[0].toString() + "' " + "*")
 
 }
