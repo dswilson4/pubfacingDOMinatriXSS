@@ -1,37 +1,28 @@
-// keep this around...may be useful for overriding any
-// other methods from the original document object...
 var original = document.createElement;
 
-//https://developer.mozilla.org/en-US/docs/Web/API/Window/crypto
 var array = new Uint32Array(1);
 window.crypto.getRandomValues(array);
-// console.log(array[0]);
 
 // (function hook) the document.createElement() function is overridden.
-// src: https://stackoverflow.com/questions/50768596/hook-document-createelement-script-to-change-srcr
 document.createElement = function (tag) {
+
       // call the function (createElement)...
       // from original document object. This needs to work for all tags,
       // so we createElement regardless of tag
       var element = original.call(document, tag);
-      // console.log('Confirms document.createElement has been modified');
 
       // only for script tags should a nonce value be set.
       if (tag.toLowerCase() === 'script') {
             element.setAttribute("nonce", array[0]);
             // element.setAttribute("nonceTest", (array[0] + 1).toString());
-            // console.log('in control structure to set nonce for script...');
       }
       return element;
 };
 
-// we need to check if the dom content has loaded...
-// it is the 'interactive' specification that indicate DOM content has loaded
-// src: https://stackoverflow.com/questions/9457891/how-to-detect-if-domcontentloaded-was-fired
 
 function afterDOMloaded() {
+
       var meta = document.createElement('meta');
-      //https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/script-src
 
       meta.httpEquiv = 'Content-Security-Policy';
 
@@ -49,12 +40,7 @@ function afterDOMloaded() {
 
             // we want to see all the attribute names of each node...
             // this will allow us to tell if a given attribute is an event handler...
-            // ex: onclick=myfunc()
             var attributeNames = tags[i].getAttributeNames();
-
-            // console.log('---attributeNames---')
-            // console.log(attributeNames)
-            // console.log('---attributeNames---')
 
             var eventHandlerIndicies = [];
             var eventType = [];

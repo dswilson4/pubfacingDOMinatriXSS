@@ -1,47 +1,39 @@
-From cb060f5d791dcd96fe5f193812973cae18bae6c7 Mon Sep 17 00:00:00 2001
-From: Dale Wilson <dsw6ru@virginia.edu>
-Date: Sun, 27 Sep 2020 23:40:50 -0400
-Subject: [PATCH] prototype for disable-dynamic
+From da194c5208ba430090f43a9499f43969d0abeba6 Mon Sep 17 00:00:00 2001
+From: dswilson4 <dsw6ru@virginia.edu>
+Date: Mon, 30 Nov 2020 20:44:28 -0500
+Subject: [PATCH] changes to blink rendering engine that support new
+ disable-dynamic feature
 
 ---
- .../blink/renderer/core/dom/document.cc       | 18 +++++++
- .../blink/renderer/core/dom/document.h        |  2 +-
+ .../blink/renderer/core/dom/document.cc       | 21 ++++++++
+ .../blink/renderer/core/dom/document.h        |  3 ++
  .../renderer/core/dom/document_fragment.cc    | 44 ++++++++++++++--
  .../renderer/core/dom/document_fragment.h     |  4 ++
- .../core/frame/csp/content_security_policy.cc | 18 +++++++
- .../core/frame/csp/content_security_policy.h  |  8 +++
- .../core/frame/csp/csp_directive_list.cc      | 17 +++++++
- .../core/frame/csp/csp_directive_list.h       | 17 +++++++
+ .../core/frame/csp/content_security_policy.cc | 20 +++++++-
+ .../core/frame/csp/content_security_policy.h  |  6 +++
+ .../core/frame/csp/csp_directive_list.cc      | 16 ++++++
+ .../core/frame/csp/csp_directive_list.h       | 15 ++++++
  .../core/frame/csp/source_list_directive.cc   | 19 +++++++
  .../core/frame/csp/source_list_directive.h    |  3 ++
  .../html/parser/nesting_level_incrementer.h   |  4 ++
  .../core/script/html_parser_script_runner.cc  | 50 +++++++++++++++++++
  .../core/script/html_parser_script_runner.h   |  4 ++
- 13 files changed, 203 insertions(+), 5 deletions(-)
+ 13 files changed, 204 insertions(+), 5 deletions(-)
 
 diff --git a/third_party/blink/renderer/core/dom/document.cc b/third_party/blink/renderer/core/dom/document.cc
-index f35dd4f6078e..6a46b0341c04 100644
+index b2d18598e9c1..d41d3d6dac94 100644
 --- a/third_party/blink/renderer/core/dom/document.cc
 +++ b/third_party/blink/renderer/core/dom/document.cc
-@@ -327,6 +327,9 @@
+@@ -339,6 +339,8 @@
+ #include "third_party/blink/renderer/platform/wtf/text/character_names.h"
  #include "third_party/blink/renderer/platform/wtf/text/string_buffer.h"
  #include "third_party/blink/renderer/platform/wtf/text/text_encoding_registry.h"
- 
 +#include "base/logging.h"
 +
-+
+ 
  #ifndef NDEBUG
  using WeakDocumentSet = blink::HeapHashSet<blink::WeakMember<blink::Document>>;
- static WeakDocumentSet& liveDocumentSet();
-@@ -1022,6 +1025,7 @@ SecurityOrigin* Document::GetMutableSecurityOrigin() {
-   return GetSecurityContext().GetMutableSecurityOrigin();
- }
- 
-+// where GetContentSecurityPolicy() is defined
- ContentSecurityPolicy* Document::GetContentSecurityPolicy() const {
-   return GetSecurityContext().GetContentSecurityPolicy();
- }
-@@ -4395,6 +4399,9 @@ void Document::write(const String& text,
+@@ -4307,6 +4309,9 @@ void Document::write(const String& text,
        "removing-document-write",
        base::TimeDelta(), nullptr);
    probe::BreakableLocation(domWindow(), "Document.write");
@@ -51,10 +43,19 @@ index f35dd4f6078e..6a46b0341c04 100644
    parser_->insert(text);
  }
  
-@@ -4723,6 +4730,17 @@ void Document::MaybeHandleHttpRefresh(const String& content,
+@@ -4630,11 +4635,27 @@ CSSStyleSheet& Document::ElementSheet() {
+   return *elem_sheet_;
+ }
+ 
++ContentSecurityPolicy* Document::GetContentSecurityPolicy() const {
++  return execution_context_->GetContentSecurityPolicy();
++}
++
+ void Document::MaybeHandleHttpRefresh(const String& content,
                                        HttpRefreshType http_refresh_type) {
-   if (is_view_source_ || !frame_)
+   if (is_view_source_ || !dom_window_)
      return;
+ 
 +  // here do a check for disable-dynamic... and return early to prevent
 +  // refresh processing
 +  // create constant pointer to calling document
@@ -66,22 +67,31 @@ index f35dd4f6078e..6a46b0341c04 100644
 +    LOG(INFO) << "Refresh has been disabled";
 +    return;
 +  }
- 
++
    base::TimeDelta delay;
    String refresh_url_string;
+   if (!ParseHTTPRefresh(content,
 diff --git a/third_party/blink/renderer/core/dom/document.h b/third_party/blink/renderer/core/dom/document.h
-index 0a680ab6bb88..08b369ca5f30 100644
+index 37ae8c5c8d75..98c6f5e874f3 100644
 --- a/third_party/blink/renderer/core/dom/document.h
 +++ b/third_party/blink/renderer/core/dom/document.h
-@@ -324,7 +324,7 @@ class CORE_EXPORT Document : public ContainerNode,
+@@ -114,6 +114,7 @@ class DocumentData;
+ class ElementIntersectionObserverData;
+ class ComputedStyle;
+ class ConsoleMessage;
++class ContentSecurityPolicy;
+ class ContextFeatures;
+ class CookieJar;
+ class V0CustomElementMicrotaskRunQueue;
+@@ -1665,6 +1666,8 @@ class CORE_EXPORT Document : public ContainerNode,
+   void SetFindInPageActiveMatchNode(Node*);
+   const Node* GetFindInPageActiveMatchNode() const;
  
-   bool DocumentPolicyFeatureObserved(
-       mojom::blink::DocumentPolicyFeature feature);
--
-+  // important
-   SecurityContext& GetSecurityContext() { return security_context_; }
-   const SecurityContext& GetSecurityContext() const {
-     return security_context_;
++  ContentSecurityPolicy* GetContentSecurityPolicy() const;
++
+  protected:
+   void ClearXMLVersion() { xml_version_ = String(); }
+ 
 diff --git a/third_party/blink/renderer/core/dom/document_fragment.cc b/third_party/blink/renderer/core/dom/document_fragment.cc
 index 0cd276b9e5df..b8ccc455f250 100644
 --- a/third_party/blink/renderer/core/dom/document_fragment.cc
@@ -180,10 +190,10 @@ index 00c2703b5c62..5f74a5b94b05 100644
  
  template <>
 diff --git a/third_party/blink/renderer/core/frame/csp/content_security_policy.cc b/third_party/blink/renderer/core/frame/csp/content_security_policy.cc
-index 5c8a945baf9b..531d852b7369 100644
+index 43c72ec32aef..6292e60039d1 100644
 --- a/third_party/blink/renderer/core/frame/csp/content_security_policy.cc
 +++ b/third_party/blink/renderer/core/frame/csp/content_security_policy.cc
-@@ -74,6 +74,9 @@
+@@ -75,6 +75,9 @@
  #include "third_party/blink/renderer/platform/wtf/wtf_size_t.h"
  #include "v8/include/v8.h"
  
@@ -193,15 +203,17 @@ index 5c8a945baf9b..531d852b7369 100644
  namespace blink {
  
  using network::mojom::ContentSecurityPolicySource;
-@@ -155,6 +158,7 @@ static WebFeature GetUseCounterHelperType(ContentSecurityPolicyType type) {
- ContentSecurityPolicy::ContentSecurityPolicy()
-     : delegate_(nullptr),
-       override_inline_style_allowed_(false),
-+      disable_dynamic_present_(false),
-       script_hash_algorithms_used_(kContentSecurityPolicyHashAlgorithmNone),
-       style_hash_algorithms_used_(kContentSecurityPolicyHashAlgorithmNone),
+@@ -161,7 +164,8 @@ ContentSecurityPolicy::ContentSecurityPolicy()
        sandbox_mask_(network::mojom::blink::WebSandboxFlags::kNone),
-@@ -390,6 +394,8 @@ void ContentSecurityPolicy::AddPolicyFromHeaderValue(
+       require_trusted_types_(false),
+       insecure_request_policy_(
+-          mojom::blink::InsecureRequestPolicy::kLeaveInsecureRequestsAlone) {}
++          mojom::blink::InsecureRequestPolicy::kLeaveInsecureRequestsAlone), 
++      disable_dynamic_present_(false) {}
+ 
+ bool ContentSecurityPolicy::IsBound() {
+   return delegate_;
+@@ -391,6 +395,8 @@ void ContentSecurityPolicy::AddPolicyFromHeaderValue(
    // RFC2616, section 4.2 specifies that headers appearing multiple times can
    // be combined with a comma. Walk the header string, and parse each comma
    // separated chunk as a separate header.
@@ -210,7 +222,7 @@ index 5c8a945baf9b..531d852b7369 100644
    const UChar* position = begin;
    while (position < end) {
      SkipUntil<UChar>(position, end, ',');
-@@ -399,9 +405,17 @@ void ContentSecurityPolicy::AddPolicyFromHeaderValue(
+@@ -400,9 +406,17 @@ void ContentSecurityPolicy::AddPolicyFromHeaderValue(
      Member<CSPDirectiveList> policy =
          CSPDirectiveList::Create(this, begin, position, type, source);
  
@@ -228,7 +240,7 @@ index 5c8a945baf9b..531d852b7369 100644
  
      policies_.push_back(policy.Release());
  
-@@ -450,6 +464,10 @@ void ContentSecurityPolicy::SetOverrideAllowInlineStyle(bool value) {
+@@ -451,6 +465,10 @@ void ContentSecurityPolicy::SetOverrideAllowInlineStyle(bool value) {
    override_inline_style_allowed_ = value;
  }
  
@@ -240,10 +252,10 @@ index 5c8a945baf9b..531d852b7369 100644
    // Create a temporary CSPSource so that 'self' expressions can be resolved
    // before we bind to an execution context (for 'frame-ancestor' resolution,
 diff --git a/third_party/blink/renderer/core/frame/csp/content_security_policy.h b/third_party/blink/renderer/core/frame/csp/content_security_policy.h
-index 29fe4bae016d..2cf9ea9aea12 100644
+index 1ffbbe5ced3c..64827d8b9118 100644
 --- a/third_party/blink/renderer/core/frame/csp/content_security_policy.h
 +++ b/third_party/blink/renderer/core/frame/csp/content_security_policy.h
-@@ -514,6 +514,9 @@ class CORE_EXPORT ContentSecurityPolicy final
+@@ -504,6 +504,9 @@ class CORE_EXPORT ContentSecurityPolicy final
  
    void Count(WebFeature feature) const;
  
@@ -253,22 +265,25 @@ index 29fe4bae016d..2cf9ea9aea12 100644
   private:
    FRIEND_TEST_ALL_PREFIXES(ContentSecurityPolicyTest, NonceInline);
    FRIEND_TEST_ALL_PREFIXES(ContentSecurityPolicyTest, NonceSinglePolicy);
-@@ -567,8 +570,13 @@ class CORE_EXPORT ContentSecurityPolicy final
-       const KURL&,
-       SchemeRegistry::PolicyAreas = SchemeRegistry::kPolicyAreaAll) const;
+@@ -569,6 +572,8 @@ class CORE_EXPORT ContentSecurityPolicy final
+       LocalFrame* = nullptr,
+       Element* = nullptr);
  
 +  void SetDisableDynamic() { disable_dynamic_present_ = true; }
 +
    Member<ContentSecurityPolicyDelegate> delegate_;
    bool override_inline_style_allowed_;
-+  // This is where CSP Directive Lists are held, macro policies_
-+  // this is a bool that will designate if disable-dynamic was specified
-+  bool disable_dynamic_present_{false};
    CSPDirectiveListVector policies_;
-   ConsoleMessageVector console_messages_;
-   bool header_delivered_{false};
+@@ -593,6 +598,7 @@ class CORE_EXPORT ContentSecurityPolicy final
+   String self_protocol_;
+ 
+   bool supports_wasm_eval_ = false;
++  bool disable_dynamic_present_{false};
+ };
+ 
+ }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/csp/csp_directive_list.cc b/third_party/blink/renderer/core/frame/csp/csp_directive_list.cc
-index 93b36d543ab8..6332244f8d68 100644
+index 5aec2cab35a7..775c3024e28c 100644
 --- a/third_party/blink/renderer/core/frame/csp/csp_directive_list.cc
 +++ b/third_party/blink/renderer/core/frame/csp/csp_directive_list.cc
 @@ -32,6 +32,9 @@
@@ -281,19 +296,15 @@ index 93b36d543ab8..6332244f8d68 100644
  namespace blink {
  
  namespace {
-@@ -142,9 +145,11 @@ CSPDirectiveList::CSPDirectiveList(ContentSecurityPolicy* policy,
+@@ -142,6 +145,7 @@ CSPDirectiveList::CSPDirectiveList(ContentSecurityPolicy* policy,
        has_sandbox_policy_(false),
        strict_mixed_content_checking_enforced_(false),
        upgrade_insecure_requests_(false),
 +      disable_dynamic_present_(false),
-       require_sri_for_(RequireSRIForToken::kNone),
        use_reporting_api_(false) {}
  
-+// important
  CSPDirectiveList* CSPDirectiveList::Create(ContentSecurityPolicy* policy,
-                                            const UChar* begin,
-                                            const UChar* end,
-@@ -155,6 +160,13 @@ CSPDirectiveList* CSPDirectiveList::Create(ContentSecurityPolicy* policy,
+@@ -154,6 +158,13 @@ CSPDirectiveList* CSPDirectiveList::Create(ContentSecurityPolicy* policy,
        MakeGarbageCollected<CSPDirectiveList>(policy, type, source);
    directives->Parse(begin, end, should_parse_wasm_eval);
  
@@ -307,7 +318,7 @@ index 93b36d543ab8..6332244f8d68 100644
    if (!directives->CheckEval(directives->OperativeDirective(
            ContentSecurityPolicy::DirectiveType::kScriptSrc))) {
      String message =
-@@ -314,6 +326,10 @@ bool CSPDirectiveList::CheckDynamic(SourceListDirective* directive) const {
+@@ -313,6 +324,10 @@ bool CSPDirectiveList::CheckDynamic(SourceListDirective* directive) const {
    return !directive || directive->AllowDynamic();
  }
  
@@ -316,9 +327,9 @@ index 93b36d543ab8..6332244f8d68 100644
 +}
 +
  void CSPDirectiveList::ReportMixedContent(
-     const KURL& mixed_url,
+     const KURL& blocked_url,
      ResourceRequest::RedirectStatus redirect_status) const {
-@@ -345,6 +361,7 @@ bool CSPDirectiveList::AllowTrustedTypeAssignmentFailure(
+@@ -345,6 +360,7 @@ bool CSPDirectiveList::AllowTrustedTypeAssignmentFailure(
    return IsReportOnly();
  }
  
@@ -327,20 +338,12 @@ index 93b36d543ab8..6332244f8d68 100644
      SourceListDirective* directive,
      const KURL& url,
 diff --git a/third_party/blink/renderer/core/frame/csp/csp_directive_list.h b/third_party/blink/renderer/core/frame/csp/csp_directive_list.h
-index 0b176a4f801d..46f9ccc7d9ad 100644
+index 7185ce051f2f..47c7bac42e65 100644
 --- a/third_party/blink/renderer/core/frame/csp/csp_directive_list.h
 +++ b/third_party/blink/renderer/core/frame/csp/csp_directive_list.h
-@@ -114,6 +114,7 @@ class CORE_EXPORT CSPDirectiveList final
-   void ReportMixedContent(const KURL& mixed_url,
-                           ResourceRequest::RedirectStatus) const;
+@@ -173,6 +173,10 @@ class CORE_EXPORT CSPDirectiveList final
  
-+// important
-   bool ShouldDisableEval() const {
-     return ShouldDisableEvalBecauseScriptSrc() ||
-            ShouldDisableEvalBecauseTrustedTypes();
-@@ -189,6 +190,10 @@ class CORE_EXPORT CSPDirectiveList final
- 
-   void Trace(Visitor*);
+   void Trace(Visitor*) const;
  
 +  bool CheckDisableDynamic() const {
 +    return disable_dynamic_present_;
@@ -349,16 +352,15 @@ index 0b176a4f801d..46f9ccc7d9ad 100644
   private:
    FRIEND_TEST_ALL_PREFIXES(CSPDirectiveListTest, IsMatchingNoncePresent);
    FRIEND_TEST_ALL_PREFIXES(CSPDirectiveListTest, GetSourceVector);
-@@ -254,6 +259,8 @@ class CORE_EXPORT CSPDirectiveList final
+@@ -236,6 +240,7 @@ class CORE_EXPORT CSPDirectiveList final
    bool CheckEval(SourceListDirective*) const;
    bool CheckWasmEval(SourceListDirective*) const;
    bool CheckDynamic(SourceListDirective*) const;
 +  bool CheckDisableDynamic(SourceListDirective*) const;
-+
    bool IsMatchingNoncePresent(SourceListDirective*, const String&) const;
    bool AreAllMatchingHashesPresent(SourceListDirective*,
                                     const IntegrityMetadataSet&) const;
-@@ -324,6 +331,14 @@ class CORE_EXPORT CSPDirectiveList final
+@@ -296,6 +301,14 @@ class CORE_EXPORT CSPDirectiveList final
        const ContentSecurityPolicy::DirectiveType,
        const CSPDirectiveListVector& policies);
  
@@ -366,14 +368,14 @@ index 0b176a4f801d..46f9ccc7d9ad 100644
 +    disable_dynamic_present_ = true;
 +  }
 +
-+  // bool CheckDisableDynamic() {
++  // bool CheckDisableDynamic() const {
 +  //   return disable_dynamic_present_;
 +  // }
 +
    Member<ContentSecurityPolicy> policy_;
  
    String header_;
-@@ -336,6 +351,8 @@ class CORE_EXPORT CSPDirectiveList final
+@@ -308,6 +321,8 @@ class CORE_EXPORT CSPDirectiveList final
  
    bool upgrade_insecure_requests_;
  
@@ -383,7 +385,7 @@ index 0b176a4f801d..46f9ccc7d9ad 100644
    Member<SourceListDirective> base_uri_;
    Member<SourceListDirective> child_src_;
 diff --git a/third_party/blink/renderer/core/frame/csp/source_list_directive.cc b/third_party/blink/renderer/core/frame/csp/source_list_directive.cc
-index f1b002885412..e652090bce6a 100644
+index 063158759fbf..00884b085c9c 100644
 --- a/third_party/blink/renderer/core/frame/csp/source_list_directive.cc
 +++ b/third_party/blink/renderer/core/frame/csp/source_list_directive.cc
 @@ -16,6 +16,9 @@
@@ -441,7 +443,7 @@ index f1b002885412..e652090bce6a 100644
      const ContentSecurityPolicyHashAlgorithm& algorithm,
      const DigestValue& hash) {
 diff --git a/third_party/blink/renderer/core/frame/csp/source_list_directive.h b/third_party/blink/renderer/core/frame/csp/source_list_directive.h
-index 08d3092a3c97..bc9c26193320 100644
+index 4472f7b8bf87..fb498ebf7b5d 100644
 --- a/third_party/blink/renderer/core/frame/csp/source_list_directive.h
 +++ b/third_party/blink/renderer/core/frame/csp/source_list_directive.h
 @@ -50,6 +50,7 @@ class CORE_EXPORT SourceListDirective final : public CSPDirective {
@@ -484,7 +486,7 @@ index ce08a16b68b1..3b3c54e3731a 100644
    unsigned* nesting_level_;
  
 diff --git a/third_party/blink/renderer/core/script/html_parser_script_runner.cc b/third_party/blink/renderer/core/script/html_parser_script_runner.cc
-index e46c3e69a88a..4eeeaad37ded 100644
+index 9d2e2ddccee8..e9513ed2bac5 100644
 --- a/third_party/blink/renderer/core/script/html_parser_script_runner.cc
 +++ b/third_party/blink/renderer/core/script/html_parser_script_runner.cc
 @@ -44,6 +44,9 @@
@@ -525,7 +527,7 @@ index e46c3e69a88a..4eeeaad37ded 100644
      // <spec step="B.8">Execute the script.</spec>
      DCHECK(IsExecutingScript());
      DoExecuteScript(pending_script, DocumentURLForScriptExecution(document_));
-@@ -327,6 +344,22 @@ void HTMLParserScriptRunner::ProcessScriptElement(
+@@ -326,6 +343,22 @@ void HTMLParserScriptRunner::ProcessScriptElement(
  
    bool had_preload_scanner = host_->HasPreloadScanner();
  
@@ -548,7 +550,7 @@ index e46c3e69a88a..4eeeaad37ded 100644
    // <spec>An end tag whose tag name is "script" ...</spec>
    //
    // Try to execute the script given to us.
-@@ -607,6 +640,15 @@ void HTMLParserScriptRunner::ProcessScriptElementInternal(
+@@ -606,6 +639,15 @@ void HTMLParserScriptRunner::ProcessScriptElementInternal(
      // which might cause new characters to be inserted into the tokenizer, and
      // might cause the tokenizer to output more tokens, resulting in a reentrant
      // invocation of the parser. ...</spec>
@@ -564,7 +566,7 @@ index e46c3e69a88a..4eeeaad37ded 100644
      script_loader->PrepareScript(script_start_position);
  
      if (!script_loader->WillBeParserExecuted())
-@@ -640,6 +682,14 @@ void HTMLParserScriptRunner::ProcessScriptElementInternal(
+@@ -639,6 +681,14 @@ void HTMLParserScriptRunner::ProcessScriptElementInternal(
          if (parser_blocking_script_)
            parser_blocking_script_->Dispose();
          parser_blocking_script_ = nullptr;
@@ -580,10 +582,10 @@ index e46c3e69a88a..4eeeaad37ded 100644
              script_loader->TakePendingScript(ScriptSchedulingType::kImmediate),
              DocumentURLForScriptExecution(document_));
 diff --git a/third_party/blink/renderer/core/script/html_parser_script_runner.h b/third_party/blink/renderer/core/script/html_parser_script_runner.h
-index d219180da299..21967d4cfa75 100644
+index 390b3de35ea3..19a971cafba4 100644
 --- a/third_party/blink/renderer/core/script/html_parser_script_runner.h
 +++ b/third_party/blink/renderer/core/script/html_parser_script_runner.h
-@@ -102,6 +102,10 @@ class HTMLParserScriptRunner final
+@@ -101,6 +101,10 @@ class HTMLParserScriptRunner final
      return !!reentry_permit_->ScriptNestingLevel();
    }
  
@@ -595,5 +597,5 @@ index d219180da299..21967d4cfa75 100644
    // is preparing to stop but before |ExecuteScriptsWaitingForParsing|.
    void RecordMetricsAtParseEnd() const;
 -- 
-2.24.3 (Apple Git-128)
+2.28.0.windows.1
 
