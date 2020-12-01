@@ -1,0 +1,48 @@
+    static function OnBeforeResponse(oSession: Session) {
+        
+        // If the given response is returning html
+        if ( oSession.oResponse.headers.ExistsAndContains("Content-Type", "html") ) {
+            
+            var targetDomains = ['www.google.com', 'www.youtube.com', 'www.tmall.com', 'www.facebook.com', 'www.baidu.com', 'www.qq.com', 'www.sohu.com', 'www.taobao.com', 
+                'www.360.cn', 'www.amazon.com', 'www.jd.com', 'www.yahoo.com', 'www.wikipedia.org', 'www.zoom.us', 'www.weibo.com', 'www.sina.com.cn', 'www.live.com', 
+                'www.reddit.com', 'www.xinhuanet.com', 'www.netflix.com', 'www.microsoft.com', 'www.okezone.com', 'www.vk.com', 'www.office.com', 'www.instagram.com', 'www.csdn.net', 
+                'www.alipay.com', 'www.microsoftonline.com', 'www.myshopify.com', 'www.yahoo.co.jp', 'www.panda.tv', 'www.zhanqi.tv', 'www.google.com.hk', 'www.bongacams.com', 'www.twitch.tv', 'www.amazon.in', 
+                'www.naver.com', 'www.bing.com', 'www.apple.com', 'www.ebay.com', 'www.aliexpress.com', 'www.tianya.cn', 'www.amazon.co.jp', 'www.stackoverflow.com', 'www.adobe.com', 'www.twitter.com', 'www.google.co.in', 
+                'www.livejasmin.com', 'www.yandex.ru', 'www.tribunnews.com'];
+
+            // Control structure for determining if response hostname is within testing targets
+            var found = false;
+            for (var x = 0; x < targetDomains.length; x++) {
+                FiddlerObject.log(targetDomains[x])
+                if (oSession.hostname.Contains(targetDomains[x])) {
+                    found = true;
+                    break
+                }
+            }
+            
+            if (found) {
+                // Directly read in DOMinatriXSStatic or control script content
+                var lines = System.IO.File.ReadAllLines("E:\\dev\\DOMinatriXSS\\dominatrixssStatic.js");
+                var str = String.Join("\n", lines);
+                
+                oSession.oResponse.headers.Add("ChangeHeader", "Caught and modified");
+
+                // Removing compression/chunking
+                oSession.utilDecodeResponse();
+
+                var oBody = System.Text.Encoding.UTF8.GetString(oSession.responseBodyBytes);
+
+                // Find the end of the HEAD script
+                // Here is where we inject the DOMinatriXSStatic or control script
+                var oRegEx = oRegEx = /(<\head>)/gi
+                // replace the head tag with new-script + new-script closing tag
+                oBody = oBody.replace(oRegEx, "<head><script type='text/javascript'>" + str + "</script>");
+
+                // Return modified response body
+                oSession.utilSetResponseBody(oBody); 
+            }
+        }
+        if (m_Hide304s && oSession.responseCode == 304) {
+            oSession["ui-hide"] = "true";
+        }
+    }
