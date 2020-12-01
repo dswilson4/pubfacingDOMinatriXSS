@@ -6,13 +6,13 @@
 4. Fiddler Script used for testing of DOMinatriXSS performance overhead, could be used for future compatibility studies and extended testing
 
 # Patch instructions
-The patch included in this repository was applied after the below commit hash.  The below git hash is included in the event that someone would like to test the disable-dynamic functionality and is having trouble with merge conflicts at commit later than that of the below git hash in the Chromium repo:
+The patch included in this repository was applied after the below commit hash.  The below git hash is included in the event that someone would like to test the disable-dynamic functionality and is having trouble with merge conflicts at a commit later than that of the below git hash in the Chromium repo:
 
 Path after commit hash: 5ae5e597e7bf1f3f86d045a32723ab1b2cfda841
 
 git log for context:
 
-Author: REDACT <hollingum@google.com>
+Author: Nicholas Hollingum <hollingum@google.com>
 Date:   Mon Sep 28 07:28:28 2020 +0000
 
 Propagate ordinal motion to Exo clients (if it is available)
