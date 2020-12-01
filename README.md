@@ -1,7 +1,7 @@
 # This repository includes
 
-1. DOMinatriXSS JavaScript library
-2. DOMinatriXSStatic JavaScript library
+1. DOMinatriXSS JavaScript file
+2. DOMinatriXSStatic JavaScript file
 3. git patch to be applied to Chromium project (targeting Blink browser engine specifically)
 4. Fiddler Script used for testing of DOMinatriXSS performance overhead, could be used for future compatibility studies and extended testing
 
