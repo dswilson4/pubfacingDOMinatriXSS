@@ -8,7 +8,7 @@
 # Patch instructions
 The patch included in this repository was applied after the below commit hash.  The below git hash is included in the event that someone would like to test the disable-dynamic functionality and is having trouble with merge conflicts at a commit later than that of the below git hash in the Chromium repo:
 
-Path after commit hash: 5ae5e597e7bf1f3f86d045a32723ab1b2cfda841
+Last commit hash BEFORE patch commit: 5ae5e597e7bf1f3f86d045a32723ab1b2cfda841
 
 git log for context:
 
