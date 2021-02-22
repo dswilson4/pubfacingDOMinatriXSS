@@ -1,15 +1,33 @@
+import json
+
+import ast
+
+from collections import defaultdict
+domains = []
+
+
+# open file and read the content in a list
+with open('alexa50-200.txt', 'r') as filehandle:
+    for line in filehandle:
+        # remove linebreak which is the last character of the string
+        currentPlace = line[:-1]
+
+        # add item to the list
+        domains.append(currentPlace)
 
   
   
 
-allFiles = ["alpha1_5.txt", "alpha6_10.txt", "alpha11_15.txt", "alpha16_20.txt",
-            "alpha21_25.txt", "alpha26_30.txt", "alpha31_35.txt", "alpha36_40.txt",
-            "alpha41_45.txt", "alpha46_50.txt"]
+allFiles = ["DOMinoRun.txt", "plusPlusRun.txt", "controlRun.txt"]
 
+plusplus_domainMap = {}
 
-averages = {}
+control_domainMap = {}
 
 for fileName in allFiles:
+
+    if "DOMino" in fileName:
+        continue 
 
     # Using readlines() 
     file1 = open(fileName, 'r') 
@@ -19,100 +37,156 @@ for fileName in allFiles:
 
     # { domain : [ [Time to DOMContentLoaded] , [conversion time] ] }
     test_domainMap = {}
-    control_domainMap = {}
 
-    conversionMap = {}
 
     for line in Lines: 
         # [11788:14032:1112/042852.933:INFO:CONSOLE(102)] "Conversion time: 6.584999999176944", source: https://www.google.com/ (102)
 
+        unreachableDomainErrors = ["ERROR PRINTING OCCURED FOR THIS DOMAIN", "*NEEDS TO TRY HTTP*", "^FAILURE, SITE NOT REACHABLE^"]
+        if line.strip() in domains:
+            continue
+        if line.strip() in unreachableDomainErrors:
+            continue
+        trimmed = line.strip()
+        try:
+            jsonObj = ast.literal_eval(trimmed)
+        except:
+            print("FAILED HERE")
+            print(trimmed)
+            continue
 
-        if "Conversion time"in line:
-            if "overheadControl" in line:
-                print('here')
-            test = line.split('"')
+        # print(jsonObj)
+        if "Conversion time" in jsonObj['message']:
+            # print('here')
+            forDomain = jsonObj['message'].split(' ')
+            # print(forDomain[0])
+            domainName = forDomain[0]
+            # print(jsonObj['message'])
 
-            parsed = test[1].split(": ")
-            # ['Conversion time', '13.59999999840511', 'https://www.google.com/']
+            forValue = jsonObj['message'].split(': ')
+            print("forVal")
+            measuredMs = float(forValue[1])
+            print(measuredMs)
 
-            domainName = parsed[2]
-            conversionTime = float(parsed[1])
-            
-            if domainName not in conversionMap:
-                conversionMap[domainName] = []
-            conversionMap[domainName].append(conversionTime)
-
-        if "DOMContentLoaded" in line:
-            if "overheadControl" in line:
-                print('here')
-            # Creates this format:
-            # ['[7164:3916:1111/225853.774:INFO:CONSOLE(141)] ', 'Time to DOMContentLoaded: 1504.4950000001336', ', source: http://127.0.0.1:8887/dominatrixssStatic.js (141)\n']
-            test = line.split('"')
-
-            # Split on ": "
-            # 'Time to DOMContentLoaded: 1504.4950000001336'
-            parsed = test[1].split(": ")
-            domainName = parsed[2]
-            timeToDOM = float(parsed[1])
-
-
-            if (parsed[3] == 'overhead'):
-                if domainName not in control_domainMap:
-                    control_domainMap[domainName] = [[], []]
-                control_domainMap[domainName][0].append(timeToDOM)
+            if domainName not in test_domainMap:
+                test_domainMap[domainName] = ([], [])
             else:
-                if domainName not in test_domainMap:
-                    test_domainMap[domainName] = [[], []]
-                test_domainMap[domainName][0].append(timeToDOM)
+                test_domainMap[domainName][1].append(measuredMs)
+
+            # print(count)
+        if "Time to DOMContentLoaded" in jsonObj['message']:
+            # print('here')
+            forDomain = jsonObj['message'].split(' ')
+            # print(forDomain[0])
+            domainName = forDomain[0]
+            # print(jsonObj['message'])
+
+            forValue = jsonObj['message'].split(': ')
+            measuredMs = float(forValue[1])
+            # print(measuredMs)
+
+            if domainName not in test_domainMap:
+                test_domainMap[domainName] = ([], [])
+            else:
+                test_domainMap[domainName][0].append(measuredMs)
+            # print(count)
+
+        
+        count += 1
+
+    
 
     print("TEST MAP: ")
     print(test_domainMap)
-    print("\n")
-    print("CONTROL MAP: ")
-    print(control_domainMap)
     print("\n")
 
 
 
     print("TEST MAP: ")
     for url in test_domainMap.keys():
-        print("Time to DOMContentLoaded: " + url + " " + str(sum(test_domainMap[url][0])/len(test_domainMap[url][0])))
+        print("\n")
+        print(url)
+        if len(test_domainMap[url][0]) > 0:
+            print("Time to DOMContentLoaded: " + url + " " + str(sum(test_domainMap[url][0])/len(test_domainMap[url][0])))
+        if len(test_domainMap[url][1]) > 0:
+            print("Conversion time: " + url + " " + str(sum(test_domainMap[url][1])/len(test_domainMap[url][1])))
 
-    print("\n")
-    print("CONTROL MAP: ")
-    for url in control_domainMap.keys():
-        print("Time to DOMContentLoaded: " + url + " " + str(sum(control_domainMap[url][0])/len(control_domainMap[url][0])))
-
-
-    print("\n")
-    print("CONVERSION MAP: ")
-    for url in conversionMap.keys():
-        print("Conversion Time: "+ url + " " + str(sum(conversionMap[url])/len(conversionMap[url])))
     
-    
+    if "control" in fileName:
+        for url in test_domainMap.keys():
+            # if url not in domains:
+            #     continue
+            control_domainMap[url] = test_domainMap[url]
+    else:
+        for url in test_domainMap.keys():
+            # if url not in domains:
+            #     continue
+            plusplus_domainMap[url] = test_domainMap[url]
 
-    # Add to averages map
+# print(control_domainMap)
 
-    for url in conversionMap.keys():
-        averageOverhead = sum(conversionMap[url])/len(conversionMap[url]) / sum(test_domainMap[url][0])/len(test_domainMap[url][0])
-        averages[url] = str(averageOverhead * 100)
+controlAverage = 0
+for url in control_domainMap.keys():
+    if len(control_domainMap[url][0]) > 0:
+        avg = sum(control_domainMap[url][0]) / len(control_domainMap[url][0])
+        controlAverage += avg
+        print(url + ": " + str(avg))
+controlAverage = controlAverage / len(control_domainMap.keys())
+
+print("-----------------------")
+
+testAverage = 0
+eventConversion = 0
+convertedCount = 0
+for url in plusplus_domainMap.keys():
+    if len(plusplus_domainMap[url][0]) > 0:
+        avg = sum(plusplus_domainMap[url][0]) / len(plusplus_domainMap[url][0])
+
+        print(url + ": " + str(avg))
+        if (len(plusplus_domainMap[url][1]) == 0):
+            continue
+        convertedCount += 1
+        conversionAvg = sum(plusplus_domainMap[url][1]) / len(plusplus_domainMap[url][1])
+        eventConversion += conversionAvg
+        ratio = conversionAvg / avg
+        testAverage += ratio
+
+eventConversion = eventConversion / convertedCount
+testAverage = testAverage / convertedCount
+
+print("-----------------------")
+print("CONVERSION TIME")
+print("-----------------------")
+for url in plusplus_domainMap.keys():
+    if len(plusplus_domainMap[url][1]) > 0:
+        avg = sum(plusplus_domainMap[url][1]) / len(plusplus_domainMap[url][1])
+        print(url + ": " + str(avg))
+
+print("-----------------------")
+print("PERCENTS")
+print("-----------------------")
+# print(plusplus_domainMap)
+
+percMap = {}
+
+for url in control_domainMap.keys():
+    try:
+        keyCheck = len(control_domainMap[url][0]) > 0 and len(plusplus_domainMap[url][0]) > 0
+    except:
+        continue
+    if len(control_domainMap[url][0]) > 0 and len(plusplus_domainMap[url][0]) > 0:
+        converted = sum(control_domainMap[url][0]) / len(control_domainMap[url][0])
+        timeToDOMContentLoaded = sum(plusplus_domainMap[url][0]) / len(plusplus_domainMap[url][0])
+
+        percent = converted / timeToDOMContentLoaded
+        print(url + ": " + str(percent))
+        percMap[url] = percent
+
+# Overhead measurements
+finalAvg = sum(percMap.values()) / len(percMap.values())
+print("FINAL AVG: " + str(finalAvg))
 
 
-    #         timedValues.append(float(savedVal))
-    #         print(savedVal)
-    #     # print("Line{}: {}".format(count, line.strip())) 
-
-    # print("average: " + str(sum(timedValues)/len(timedValues)))
-
-summedAverages = []
-
-print("\n")
-for key in averages:
-    print("AVERAGE: " + averages[key] + " URL: " + key)
-    summedAverages.append(float(averages[key]))
-print("\n")
-print(summedAverages)
-print('\n')
-
-print("TOTAL AVERAGE: " + str(sum(summedAverages)/len(summedAverages)))
-
+print(controlAverage)
+print(conversionAvg)
+print(testAverage)
