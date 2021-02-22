@@ -1,3 +1,5 @@
+const toDomContentLoaded = performance.now();
+
 var original = document.createElement;
 
 var array = new Uint32Array(1);
@@ -45,8 +47,8 @@ function afterDOMloaded() {
             var eventHandlerIndicies = [];
             var eventType = [];
 
-            //populate array of indicies saving names of event handlers
-            //specific to current DOM element
+            // populate array of indicies saving names of event handlers
+            // specific to current DOM element
             for (j = 0; j < attributeNames.length; j++) {
                   // if (attributeNames[j].includes('on')) {
                   var attributeNameLength = attributeNames[j].length;

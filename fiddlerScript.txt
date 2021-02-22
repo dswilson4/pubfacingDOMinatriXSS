@@ -21,7 +21,7 @@
             }
             
             if (found) {
-                // Directly read in DOMinatriXSStatic or control script content
+                // Directly read in local copy of DOMinatriXSStatic or control script content
                 var lines = System.IO.File.ReadAllLines("dominatrixssStatic.js");
                 var str = String.Join("\n", lines);
                 
