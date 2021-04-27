@@ -31,24 +31,15 @@ domino_violationMap = defaultdict(int)
 plusPlus_violationMap = defaultdict(int)
 
 count = 0
-forDomino = 0
-forPlusPlus = 0
 # allFiles = ["DOMinoRun.txt", "plusPlusRun.txt"]
 nonceFinder = defaultdict(int)
 allFiles = ["secondControl.txt", "secondDisableDynamic.txt"]
 for fileName in allFiles:
 
-    if "plusPlus" in fileName:
-        forPlusPlus += 1
-    if "DOMinoRun" in fileName:
-        forDomino += 1
-
     # Using readlines() 
     file1 = open(fileName, 'r') 
     Lines = file1.readlines() 
     
-    # count = 0
-
 
 
     for line in Lines: 
@@ -86,6 +77,8 @@ for fileName in allFiles:
                 if websiteName in domainName:
                     belongs = True
                     break
+            
+            # Check for a count < 
             if count < 5:
                 print(belongs)
                 print(domainName)
@@ -102,20 +95,35 @@ print("DOMINO")
 print("-----------------------")
 print(domino_violationMap)
 
-print(sum(domino_violationMap.values()))
-print(forDomino)
+domino_scriptVioloations = sum(domino_violationMap.values())
+print("\n")
+print("Number of DOMino script violations: " + str(domino_scriptVioloations))
+
 print("\n")
 print("-----------------------")
 print("PLUSPLUS")
 print("-----------------------")
-print(sum(plusPlus_violationMap.values()))
 print(plusPlus_violationMap)
+plusPlus_scriptVioloations = sum(plusPlus_violationMap.values())
+print("\n")
+print("Number of DOMino++ script violations: " + str(plusPlus_scriptVioloations))
 
-print(forPlusPlus)
 
 
-print(len(domino_violationMap.keys()))
-print(len(plusPlus_violationMap.keys()))
+dominoScriptDomains = len(domino_violationMap.keys())
+
+dominoPlusPlusDomains = len(plusPlus_violationMap.keys())
+
+print("\n")
+
+print("Number of DOMino script violation domains: " + str(dominoScriptDomains))
+
+print("\n")
+
+print("Number of DOMino++ script violation domains: " + str(dominoPlusPlusDomains))
+
+
+
 domino_domainMap = defaultdict(int)
 plusplus_domainMap = defaultdict(int)
 print(nonceFinder)

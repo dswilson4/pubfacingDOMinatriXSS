@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- We need to load the JS library near the top of the webpage... -->
+  <script src="dominatrixss.js"></script>
+</head>
+
+<body>
+<h1>
+  <span>search results for: </span>
+  <span id="searchMessage"></span>
+</h1>
+
+<h1>The onclick Event</h1>
+
+<p>The onclick event is used to trigger a function when an element is clicked on.</p>
+
+<p>Click the button to trigger a function that will output "Hello World" in a p element with id="demo".</p>
+
+<button id="div1" onclick="createTest()">Inline event handler test...also executes document.createElement</button>
+
+<button id="script1" onclick="scriptTest()">create element script nonce test</button>
+
+
+<div id="script1Target">target of document.createElement test</div>
+
+<p id="demo"></p>
+
+<script>
+
+function scriptTest() {
+  var script = document.createElement('script');
+
+  // this is to alert that the script element has been 'created'...
+  script.onload = function() {
+    alert("Script is created via document.createElement, this alert occurs after the onLoad() event for the script.  Next, the attribute (src) for the script is specified as sourceScript.js");
+  };
+
+  // important given we want to be able to load scripts
+  // from various web based resources
+
+  script.setAttribute('src', "E:/dev/DOMinatriXSS/sourceScript.js");
+  document.getElementsByTagName('head')[0].appendChild(script);
+}
+
+function createTest () {
+  // create a new div element
+  var newDiv = document.createElement("div");
+  // and give it some content
+  var newContent = document.createTextNode("Hi there and greetings!");
+  // add the text node to the newly created div
+  newDiv.appendChild(newContent);
+
+  // add the newly created element and its content into the DOM
+  var currentDiv = document.getElementById("div1");
+  document.body.insertBefore(newDiv, currentDiv);
+}
+
+// Below are sample XSS attacks...
+// ------------------------------------------------------------------------
+
+// DOM XSS in document.write sink using source location.search
+
+function trackSearch(query) {
+  document.write('<img src="/resources/images/tracker.gif?searchTerms='+query+'">');
+}
+//window.location should return URL
+// URL needs to end in search?[key]=value...
+// file:///Users/dalewilson/dev/research/jsLibrary/test.html?search=%22%3E%3Csvg%20onload=alert(1)%3E using this URL
+
+//// Let an <a id="myAnchor" href="https://developer.mozilla.org/en-US/docs/HTMLHyperlinkElementUtils.search?q=123"> element be in the document
+// var anchor = document.getElementById("myAnchor");
+// var queryString = anchor.search; // Returns:'?q=123'
+
+// // Further parsing:
+// let params = new URLSearchParams(queryString);
+// let q = parseInt(params.get("q")); // is the number 123
+
+var query = (new URLSearchParams(window.location.search)).get('search');
+if(query) {
+  trackSearch(query);
+}
+
+// DOM XSS in .innerHTML source...
+// file:///Users/dalewilson/dev/research/jsLibrary/test.html?search=<img src=1 onerror=alert(1)> using this URL
+
+// inject: <img src=1 onerror=alert(1)>
+
+
+function doSearchQuery(innerQuery) {
+    document.getElementById('searchMessage').innerHTML = innerQuery;
+}
+var innerQuery = (new URLSearchParams(window.location.search)).get('search');
+if(innerQuery) {
+    doSearchQuery(innerQuery);
+}
+
+
+</script>
+
+</body>
+</html>
