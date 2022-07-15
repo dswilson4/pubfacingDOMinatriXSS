@@ -1,5 +1,7 @@
 # This repository includes
 
+Preprint (submitted to CCS) [here](./DOMino2021-versionControlCorrected.pdf)
+
 1. DOMinatriXSS JavaScript file
 2. DOMinatriXSStatic JavaScript file
 3. git patch to be applied to Chromium project supporting disable-dynamic CSP source directive functionality (targeting Blink browser engine specifically)
