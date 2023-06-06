@@ -2,10 +2,10 @@
 
 Preprint (submitted to CCS) [here](./DOMino2021-versionControlCorrected.pdf)
 
-1. DOMinatriXSS JavaScript file
-2. DOMinatriXSStatic JavaScript file
+1. DOMino JavaScript file
+2. DOMinoStatic JavaScript file
 3. git patch to be applied to Chromium project supporting disable-dynamic CSP source directive functionality (targeting Blink browser engine specifically)
-4. Fiddler Script used for testing of DOMinatriXSS performance overhead, could be used for future compatibility studies and extended testing
+4. Fiddler Script used for testing of DOMino performance overhead, could be used for future compatibility studies and extended testing
 
 # Patch instructions
 The patch included in this repository was applied after the below commit hash.  The below git hash is included in the event that someone would like to test the disable-dynamic functionality and is having trouble with merge conflicts at a commit later than that of the below git hash in the Chromium repo:
